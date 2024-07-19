@@ -34,14 +34,20 @@
                         :name="isPwd ? 'visibility_off' : 'visibility'"
                         class="cursor-pointer"
                         @click="isPwd = !isPwd"
-                      />
+                      ></q-icon>
                     </template>
                   </q-input>
 
                   <q-separator />
 
                   <div class="q-pa-md q-gutter-sm row justify-center q-mt-none">
-                    <q-btn color="white" text-color="black" label="GİRİŞ" />
+                    <q-btn
+                      color="white"
+                      text-color="black"
+                      label="GİRİŞ"
+                      @click="login()"
+                      :disabled="!kullaniciAdi || !password"
+                    ></q-btn>
                   </div>
                 </div>
               </q-tab-panel>
@@ -68,7 +74,7 @@
                         :name="isNewPwd ? 'visibility_off' : 'visibility'"
                         class="cursor-pointer"
                         @click="isNewPwd = !isNewPwd"
-                      />
+                      ></q-icon>
                     </template>
                   </q-input>
 
@@ -79,7 +85,7 @@
                       color="primary"
                       label="Kayıt Ol"
                       @click="registerUser"
-                    />
+                    ></q-btn>
                   </div>
                 </div>
               </q-tab-panel>
@@ -94,7 +100,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useQuasar } from "quasar";
-import axios from "axios";
+import axios from "axios"; // Axios import
 
 const tab = ref("login");
 const kullaniciAdi = ref("");
@@ -107,9 +113,33 @@ const isNewPwd = ref(true);
 
 const $q = useQuasar();
 
-function registerUser() {
+async function login() {
+  try {
+    const payload = {
+      kullaniciAdi: kullaniciAdi.value,
+      sifre: password.value,
+    };
+    const resp = await axios.post("/api/auth/giris", payload);
+    console.log(resp.data);
+    $q.notify({
+      color: "positive",
+      message: "Giriş başarılı!",
+      position: "center",
+    });
+    // Giriş başarılı ise yönlendirme yapılır
+  } catch (error) {
+    console.error("Giriş hatası:", error);
+    $q.notify({
+      color: "negative",
+      message:
+        "Giriş başarısız! Lütfen kullanıcı adı ve şifrenizi kontrol edin.",
+      position: "center",
+    });
+  }
+}
+
+async function registerUser() {
   if (!newKullaniciAdi.value || !newPassword.value) {
-    //alert("Lütfen kullanıcı adı ve şifre giriniz.");
     $q.notify({
       color: "negative",
       message: "Lütfen kullanıcı adı ve şifre giriniz.",
@@ -118,10 +148,43 @@ function registerUser() {
     return;
   }
 
-  alert("Başarıyla kayıt oldunuz!");
+  try {
+    const payload = {
+      username: newKullaniciAdi.value,
+      password: newPassword.value,
+      // Diğer gerekli alanları da ekleyin
+    };
 
-  newKullaniciAdi.value = "";
-  newPassword.value = "";
+    // Axios ile POST isteği gönderme
+    const response = await axios.post(
+      "http://your-keycloak-url/auth/admin/realms/{realm}/users",
+      payload,
+      {
+        headers: {
+          Authorization: "Bearer {admin_token}",
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("Kayıt işlemi başarılı:", response.data);
+    $q.notify({
+      color: "positive",
+      message: "Başarıyla kayıt oldunuz!",
+      position: "center",
+    });
+
+    // Başarıyla kayıt olduktan sonra gerekli işlemleri yapabilirsiniz
+    newKullaniciAdi.value = "";
+    newPassword.value = "";
+  } catch (error) {
+    console.error("Kayıt hatası:", error);
+    $q.notify({
+      color: "negative",
+      message: "Kayıt işlemi başarısız oldu. Lütfen tekrar deneyin.",
+      position: "center",
+    });
+  }
 }
 </script>
 

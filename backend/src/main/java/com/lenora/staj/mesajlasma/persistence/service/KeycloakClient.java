@@ -43,7 +43,39 @@ public class KeycloakClient {
 
     }
 
+    public Mono<String> register(String username, String password) {
 
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("username", username);
+        formData.add("password", password);
+
+        return client.post()
+                .uri("/auth/register")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData(formData))
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, resp -> Mono.error(new RegistrationFailedException()))
+                .bodyToMono(String.class);
+    }
+
+    private String getAdminToken() {
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("grant_type", "password");
+        formData.add("client_id", "admin-cli");
+        formData.add("username", "admin");
+        formData.add("password", "admin");
+
+        return client.post()
+                .uri("/protocol/openid-connect/token")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData(formData))
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, resp -> {
+                    return Mono.error(new LoginFailedException());
+                })
+                .bodyToMono(String.class).block();
+    }
 }
+
 
 
