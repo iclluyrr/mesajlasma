@@ -84,7 +84,7 @@ module.exports = configure(function (/* ctx */) {
       // https: true
       open: true, // opens browser window automatically
       proxy: {
-        "/api": "http://localhost:8081",
+        "/api": "http://localhost:8080",
       },
     },
 

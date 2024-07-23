@@ -119,7 +119,7 @@ async function login() {
       kullaniciAdi: kullaniciAdi.value,
       sifre: password.value,
     };
-    const resp = await axios.post("/api/auth/giris", payload);
+    const resp = await axios.post("/api/auth/login", payload);
     console.log(resp.data);
     $q.notify({
       color: "positive",
@@ -137,7 +137,6 @@ async function login() {
     });
   }
 }
-
 async function registerUser() {
   if (!newKullaniciAdi.value || !newPassword.value) {
     $q.notify({
@@ -152,19 +151,11 @@ async function registerUser() {
     const payload = {
       username: newKullaniciAdi.value,
       password: newPassword.value,
-      // Diğer gerekli alanları da ekleyin
     };
 
-    // Axios ile POST isteği gönderme
     const response = await axios.post(
-      "http://your-keycloak-url/auth/admin/realms/{realm}/users",
-      payload,
-      {
-        headers: {
-          Authorization: "Bearer {admin_token}",
-          "Content-Type": "application/json",
-        },
-      }
+      "http://localhost:8081/api/auth/createUser",
+      payload
     );
 
     console.log("Kayıt işlemi başarılı:", response.data);

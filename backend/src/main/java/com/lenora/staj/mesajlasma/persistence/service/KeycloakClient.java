@@ -1,81 +1,86 @@
 package com.lenora.staj.mesajlasma.persistence.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.keycloak.OAuth2Constants;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+import java.util.Collections;
 
 @Service
 public class KeycloakClient {
-    private final WebClient client;
 
-    @Autowired
-    public KeycloakClient(@Value("${spring.security.oauth2.client.provider.keycloak.issuer-uri}") String keycloakUri) {
-        client = WebClient.create(keycloakUri);
+    private Keycloak keycloak;
+
+    @Value("${keycloak.auth-server-url}")
+    private String serverUrl;
+
+    @Value("${keycloak.admin-realm}")
+    private String adminRealm;
+
+    @Value("${keycloak.admin-username}")
+    private String adminUsername;
+
+    @Value("${keycloak.admin-password}")
+    private String adminPassword;
+
+    @Value("${keycloak.client-secret}")
+    private String clientSecret;
+
+    @PostConstruct
+    public void init() {
+        keycloak = KeycloakBuilder.builder()
+                .serverUrl(serverUrl)
+                .realm(adminRealm)
+                .clientId("admin-cli")
+                .grantType(OAuth2Constants.PASSWORD)
+                .username(adminUsername)
+                .password(adminPassword)
+                .build();
     }
-
 
     public Mono<String> login(String username, String password) {
+        return Mono.fromCallable(()->{
+        Keycloak loginKeycloak = KeycloakBuilder.builder()
+                .serverUrl(serverUrl)
+                .realm("mesajlasma")
+                .clientId("spring-server")
+                .grantType(OAuth2Constants.PASSWORD)
+                .username(username)
+                .password(password)
+                //TODO configden okunacak
+                .clientSecret("gKF2vzytWCjvpPRZcNr6rmYkiBBkrbxl")
+                .build();
+        return loginKeycloak.tokenManager().getAccessTokenString();
+    });}
+    public String createUser(String username, String password) {
+        CredentialRepresentation credential = new CredentialRepresentation();
+        credential.setType(CredentialRepresentation.PASSWORD);
+        credential.setValue(password);
+        credential.setTemporary(false);
 
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("grant_type", "password");
-        formData.add("client_id", "spring-server");
-        formData.add("username", username);
-        formData.add("password", password);
+        UserRepresentation user = new UserRepresentation();
+        user.setUsername(username);
+        user.setEnabled(true);
+        user.setCredentials(Collections.singletonList(credential));
 
-        return client.post()
-                .uri("/protocol/openid-connect/token")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData(formData))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, resp -> {
-                    return Mono.error(new LoginFailedException());
-                })
-                .bodyToMono(String.class);
+        try {
+            var usersResource = keycloak.realm("mesajlasma").users();
+            var response = usersResource.create(user);
 
-    }
-
-    public Mono<String> register(String username, String password) {
-
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("username", username);
-        formData.add("password", password);
-
-        return client.post()
-                .uri("/auth/register")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData(formData))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, resp -> Mono.error(new RegistrationFailedException()))
-                .bodyToMono(String.class);
-    }
-
-    private String getAdminToken() {
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("grant_type", "password");
-        formData.add("client_id", "admin-cli");
-        formData.add("username", "admin");
-        formData.add("password", "admin");
-
-        return client.post()
-                .uri("/protocol/openid-connect/token")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData(formData))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, resp -> {
-                    return Mono.error(new LoginFailedException());
-                })
-                .bodyToMono(String.class).block();
-    }
-}
-
-
-
+            if (response.getStatus() == 201) {
+                return "Kullanıcı başarıyla oluşturuldu";
+            } else {
+                String responseBody = response.readEntity(String.class);
+                System.err.println("Kullanıcı oluşturulamadı: " + response.getStatus() + " - " + responseBody);
+                return "Kullanıcı oluşturulamadı: " + response.getStatus() + " - " + responseBody;
+            }
+        } catch (Exception e) {
+            System.err.println("Kullanıcı oluşturulurken bir hata oluştu: " + e.getMessage());
+            return "Kullanıcı oluşturulurken bir hata oluştu: " + e.getMessage();
+        }
+    }}
