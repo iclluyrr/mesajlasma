@@ -1,5 +1,6 @@
 package com.lenora.staj.mesajlasma.persistence.service;
 
+import jakarta.annotation.PostConstruct;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
