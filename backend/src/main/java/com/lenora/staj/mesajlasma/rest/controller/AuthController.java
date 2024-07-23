@@ -13,19 +13,17 @@ public class AuthController {
     private final KeycloakClient keycloakClient;
 
     @Autowired
-    public AuthController(KeycloakClient keycloakClient) {this.keycloakClient = keycloakClient;}
+    public AuthController(KeycloakClient keycloakClient) {
+        this.keycloakClient = keycloakClient;
+    }
 
     @PostMapping("/login")
     public Mono<String> login(@RequestBody LoginView loginView) {
-        Mono<String> login= keycloakClient.login(loginView.getKullaniciAdi(), loginView.getSifre());
-        return login;
-
-    }
-    @PostMapping("/register")
-    public Mono<String> register(@RequestBody RegisterView registerView) {
-        Mono<String> register=keycloakClient.register(registerView.getUsername(), registerView.getPassword());
-        return register;
-
+        return keycloakClient.login(loginView.getKullaniciAdi(), loginView.getSifre());
     }
 
+    @PostMapping("/createUser")
+    public String createUser(@RequestBody RegisterView registerView) {
+        return keycloakClient.createUser(registerView.getUsername(), registerView.getPassword());
+    }
 }
