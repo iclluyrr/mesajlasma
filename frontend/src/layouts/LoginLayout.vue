@@ -45,7 +45,7 @@
                       color="white"
                       text-color="black"
                       label="GİRİŞ"
-                      @click="login()"
+                      @click="login"
                       :disabled="!kullaniciAdi || !password"
                     ></q-btn>
                   </div>
@@ -91,6 +91,20 @@
               </q-tab-panel>
             </q-tab-panels>
           </q-card>
+
+          <!-- Dialog bileşeni -->
+          <q-dialog v-model="dialogVisible">
+            <q-card>
+              <q-card-section>
+                <div class="text-h6">{{ dialogTitle }}</div>
+                <p>{{ dialogMessage }}</p>
+              </q-card-section>
+
+              <q-card-actions>
+                <q-btn flat label="Tamam" @click="closeDialog" />
+              </q-card-actions>
+            </q-card>
+          </q-dialog>
         </div>
       </q-page>
     </q-page-container>
@@ -100,7 +114,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useQuasar } from "quasar";
-import axios from "axios"; // Axios import
+import { api } from "src/boot/axios";
+
+const $q = useQuasar();
 
 const tab = ref("login");
 const kullaniciAdi = ref("");
@@ -111,7 +127,10 @@ const newKullaniciAdi = ref("");
 const newPassword = ref("");
 const isNewPwd = ref(true);
 
-const $q = useQuasar();
+// Dialog durumları
+const dialogVisible = ref(false);
+const dialogTitle = ref("");
+const dialogMessage = ref("");
 
 async function login() {
   try {
@@ -119,31 +138,41 @@ async function login() {
       kullaniciAdi: kullaniciAdi.value,
       sifre: password.value,
     };
-    const resp = await axios.post("/api/auth/login", payload);
-    console.log(resp.data);
-    $q.notify({
-      color: "positive",
-      message: "Giriş başarılı!",
-      position: "center",
-    });
-    // Giriş başarılı ise yönlendirme yapılır
+    const resp = await api.post("/auth/login", payload);
+    const token = resp.data;
+    $q.localStorage.set("token", token);
+
+    dialogTitle.value = "Başarı";
+    dialogMessage.value = "Giriş başarılı!";
+    dialogVisible.value = true;
   } catch (error) {
     console.error("Giriş hatası:", error);
-    $q.notify({
-      color: "negative",
-      message:
-        "Giriş başarısız! Lütfen kullanıcı adı ve şifrenizi kontrol edin.",
-      position: "center",
-    });
+
+    // Hata türünü kontrol et
+    if (error instanceof Error) {
+      const errorResponse = error as {
+        response?: { status?: number; data?: { message?: string } };
+      };
+      const status = errorResponse.response?.status;
+      const message =
+        errorResponse.response?.data?.message || "Giriş başarısız oldu.";
+
+      dialogTitle.value = "Hata";
+      dialogMessage.value =
+        status === 401 ? "Geçersiz kullanıcı adı veya şifre." : message;
+    } else {
+      dialogTitle.value = "Hata";
+      dialogMessage.value = "Bilinmeyen bir hata oluştu.";
+    }
+    dialogVisible.value = true;
   }
 }
+
 async function registerUser() {
   if (!newKullaniciAdi.value || !newPassword.value) {
-    $q.notify({
-      color: "negative",
-      message: "Lütfen kullanıcı adı ve şifre giriniz.",
-      position: "center",
-    });
+    dialogTitle.value = "Hata";
+    dialogMessage.value = "Lütfen kullanıcı adı ve şifre giriniz.";
+    dialogVisible.value = true;
     return;
   }
 
@@ -153,29 +182,24 @@ async function registerUser() {
       password: newPassword.value,
     };
 
-    const response = await axios.post(
-      "http://localhost:8081/api/auth/createUser",
-      payload
-    );
+    await api.post("/auth/createUser", payload);
 
-    console.log("Kayıt işlemi başarılı:", response.data);
-    $q.notify({
-      color: "positive",
-      message: "Başarıyla kayıt oldunuz!",
-      position: "center",
-    });
+    dialogTitle.value = "Başarı";
+    dialogMessage.value = "Başarıyla kayıt oldunuz!";
+    dialogVisible.value = true;
 
-    // Başarıyla kayıt olduktan sonra gerekli işlemleri yapabilirsiniz
     newKullaniciAdi.value = "";
     newPassword.value = "";
   } catch (error) {
     console.error("Kayıt hatası:", error);
-    $q.notify({
-      color: "negative",
-      message: "Kayıt işlemi başarısız oldu. Lütfen tekrar deneyin.",
-      position: "center",
-    });
+    dialogTitle.value = "Hata";
+    dialogMessage.value = "Kayıt işlemi başarısız oldu. Lütfen tekrar deneyin.";
+    dialogVisible.value = true;
   }
+}
+
+function closeDialog() {
+  dialogVisible.value = false;
 }
 </script>
 

@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,9 +39,9 @@ public class KeycloakClient {
                 .serverUrl(serverUrl)
                 .realm(adminRealm)
                 .clientId("admin-cli")
-                .grantType(OAuth2Constants.PASSWORD)
                 .username(adminUsername)
-                .password(adminPassword)
+                .clientSecret("gKF2vzytWCjvpPRZcNr6rmYkiBBkrbxl")
+                .grantType("client_credentials")
                 .build();
     }
 
@@ -50,7 +51,6 @@ public class KeycloakClient {
                 .serverUrl(serverUrl)
                 .realm("mesajlasma")
                 .clientId("spring-server")
-                .grantType(OAuth2Constants.PASSWORD)
                 .username(username)
                 .password(password)
                 //TODO configden okunacak
@@ -84,4 +84,6 @@ public class KeycloakClient {
             System.err.println("Kullanıcı oluşturulurken bir hata oluştu: " + e.getMessage());
             return "Kullanıcı oluşturulurken bir hata oluştu: " + e.getMessage();
         }
-    }}
+    }
+
+}
