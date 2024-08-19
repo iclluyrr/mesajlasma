@@ -42,8 +42,7 @@
 
                   <div class="q-pa-md q-gutter-sm row justify-center q-mt-none">
                     <q-btn
-                      color="white"
-                      text-color="black"
+                      color="primary"
                       label="GİRİŞ"
                       @click="login"
                       :disabled="!kullaniciAdi || !password"
@@ -114,9 +113,11 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useQuasar } from "quasar";
+import { useRouter } from "vue-router";
 import { api } from "src/boot/axios";
 
 const $q = useQuasar();
+const router = useRouter();
 
 const tab = ref("login");
 const kullaniciAdi = ref("");
@@ -145,10 +146,12 @@ async function login() {
     dialogTitle.value = "Başarı";
     dialogMessage.value = "Giriş başarılı!";
     dialogVisible.value = true;
+
+    // Giriş başarılıysa yönlendir
+    router.push("/main/topics"); // Yönlendirme
   } catch (error) {
     console.error("Giriş hatası:", error);
 
-    // Hata türünü kontrol et
     if (error instanceof Error) {
       const errorResponse = error as {
         response?: { status?: number; data?: { message?: string } };

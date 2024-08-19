@@ -12,8 +12,8 @@ public class KullaniciService {
     KullaniciRepository kullaniciRepository;
 
     @Transactional
-    public void test() {
-        kullaniciRepository.save(new Kullanici());
+    public void save(Kullanici k) {
+        kullaniciRepository.save(k);
     }
 
     }
