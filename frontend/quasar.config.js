@@ -82,6 +82,15 @@ module.exports = configure(function (/* ctx */) {
     devServer: {
       // https: true
       open: true, // opens browser window automatically
+
+      // Proxy configuration for API requests
+      proxy: {
+        "/api": {
+          target: "http://localhost:8081", // your backend URL
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ""),
+        },
+      },
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
@@ -90,14 +99,14 @@ module.exports = configure(function (/* ctx */) {
       // lang: 'en-US', // Quasar language pack
 
       // For special cases outside of where the auto-import strategy can have an impact
-      // (like functional components as onfe of the examples),
+      // (like functional components as one of the examples),
       // you can manually specify Quasar components/directives to be available everywhere:
       //
       // components: [],
       // directives: [],
 
       // Quasar plugins
-      plugins: ["Notify", "LocalStorage"], // Ensure Notify is included here
+      plugins: ["Notify"], // Ensure Notify is included here
     },
 
     // animations: 'all', // --- includes all animations

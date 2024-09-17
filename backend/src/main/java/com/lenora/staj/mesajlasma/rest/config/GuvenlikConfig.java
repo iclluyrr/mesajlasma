@@ -50,41 +50,34 @@ public class GuvenlikConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.cors(Customizer.withDefaults());
-        http.httpBasic(AbstractHttpConfigurer::disable)
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(sessionConfig -> sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        http.headers(headerz -> headerz.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable));
-        http.authorizeHttpRequests(authz -> authz
-                .requestMatchers(new AntPathRequestMatcher(GIRIS_URL)).permitAll()
-                .requestMatchers(new AntPathRequestMatcher(KAYIT_URL)).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/h2-console/*")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/h2-console/**/*")).permitAll()
-                // Static files:
-                .requestMatchers(new AntPathRequestMatcher("/*")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/assets/*")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/assets/**/*")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/icons/*")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/icons/**/*")).permitAll()
-                // .requestMatchers(new AntPathRequestMatcher("/customers*")).hasRole("user")
-                // .requestMatchers(new AntPathRequestMatcher("/")).permitAll()
-                .anyRequest().authenticated()
-        );
-        http.oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(jwtConverter)));
-        http.oauth2Login(Customizer.withDefaults())
-                .logout(logout -> logout.addLogoutHandler(keycloakLogoutHandler).logoutSuccessUrl("/"));
-        http.addFilterBefore(customRequestFilter, UsernamePasswordAuthenticationFilter.class);
+        http.cors(Customizer.withDefaults())
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf.disable())  // CSRF korumasını devre dışı bırakın
+                .sessionManagement(sessionConfig -> sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))  // H2 konsolunun frame seçeneklerini devre dışı bırakın
+                .authorizeHttpRequests(authz -> authz
+                        .requestMatchers(new AntPathRequestMatcher(GIRIS_URL)).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher(KAYIT_URL)).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()  // H2 konsoluna izin ver
+                        .requestMatchers(new AntPathRequestMatcher("/assets/**")).permitAll()  // Statik dosyalar için izinler
+                        .requestMatchers(new AntPathRequestMatcher("/icons/**")).permitAll()  // Statik dosyalar için izinler
+                        .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(jwtConverter)))
+                .oauth2Login(Customizer.withDefaults())
+                .logout(logout -> logout
+                        .addLogoutHandler(keycloakLogoutHandler)
+                        .logoutSuccessUrl("/"))
+                .addFilterBefore(customRequestFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        // Do not call setJwtAuthenticationConverter here. Just return the converter.
         return jwtAuthenticationConverter;
     }
-
 
     @Bean
     public SessionRegistry sessionRegistry() {
@@ -112,8 +105,6 @@ public class GuvenlikConfig {
                 var oidcUserAuthority = (OidcUserAuthority) authority;
                 var userInfo = oidcUserAuthority.getUserInfo();
 
-                // Tokens can be configured to return roles under
-                // Groups or REALM ACCESS hence have to check both
                 if (userInfo.hasClaim(REALM_ACCESS_CLAIM)) {
                     var realmAccess = userInfo.getClaimAsMap(REALM_ACCESS_CLAIM);
                     var roles = (Collection<String>) realmAccess.get(ROLES_CLAIM);
@@ -140,5 +131,3 @@ public class GuvenlikConfig {
         return roles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role)).collect(Collectors.toList());
     }
 }
-
-

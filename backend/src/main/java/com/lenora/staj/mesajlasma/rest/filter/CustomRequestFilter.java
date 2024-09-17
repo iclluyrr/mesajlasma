@@ -42,10 +42,10 @@ public class CustomRequestFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        /*if (!serviceChecker.isServiceAvailable(token)) {
+        if (!serviceChecker.isServiceAvailable(token)) {
             response.sendError(HttpStatus.UNAUTHORIZED.value(), "External service is unavailable");
             return;
-        }*/
+        }
 
         filterChain.doFilter(request, response);
     }

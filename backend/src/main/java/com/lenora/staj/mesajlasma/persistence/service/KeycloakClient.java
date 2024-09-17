@@ -51,6 +51,7 @@ public class KeycloakClient {
                 .serverUrl(serverUrl)
                 .realm("mesajlasma")
                 .clientId("spring-server")
+                .scope("openid")
                 .username(username)
                 .password(password)
                 //TODO configden okunacak

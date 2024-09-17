@@ -8,24 +8,34 @@ declare module "@vue/runtime-core" {
   }
 }
 
-// Be careful when using SSR for cross-request state pollution
-// due to creating a Singleton instance here;
-// If any client changes this (global) instance, it might be a
-// good idea to move this instance creation inside of the
-// "export default () => {}" function below (which runs individually
-// for each client)
 const api = axios.create({ baseURL: "http://localhost:8081/api" });
 
+// Add a request interceptor
+api.interceptors.request.use(
+  (config) => {
+    // Get the token from localStorage
+
+    // If the token exists, add it to the headers
+    const token = localStorage.getItem("token");
+
+    // Token'ın başındaki __q_strn| ifadesini çıkartın
+    const cleanToken = token ? token.replace(/^__q_strn\|/, "") : "";
+
+    // Token'ı Authorization başlığına ekleyin
+    if (cleanToken && config.url !== "/auth/login") {
+      config.headers.Authorization = `Bearer ${cleanToken}`;
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export default boot(({ app }) => {
-  // for use inside Vue files (Options API) through this.$axios and this.$api
-
   app.config.globalProperties.$axios = axios;
-  // ^ ^ ^ this will allow you to use this.$axios (for Vue Options API form)
-  //       so you won't necessarily have to import axios in each vue file
-
   app.config.globalProperties.$api = api;
-  // ^ ^ ^ this will allow you to use this.$api (for Vue Options API form)
-  //       so you can easily perform requests against your app's API
 });
 
 export { api, axios };

@@ -1,103 +1,152 @@
 <template>
   <q-page class="q-pa-md bg-pink-1">
-    <q-card v-if="selectedTopic" class="q-pa-md bg-white" flat bordered>
-      <q-card-section>
-        <div class="text-h6 text-pink-5">{{ selectedTopic.title }}</div>
-
-        <!-- Mesaj Listesi -->
-        <div
-          v-for="message in messages"
-          :key="message.timestamp"
-          class="q-mb-md"
-        >
-          <div class="text-caption text-pink-5">
-            {{ message.sender }}: {{ message.timestamp }}
+    <div v-if="chatId">
+      <h2 class="text-h5">Chat Room: {{ chatId }}</h2>
+      <div class="chat-container">
+        <q-scroll-area class="chat-messages">
+          <div
+            v-for="message in messages"
+            :key="message.id"
+            class="chat-message"
+          >
+            <q-item>
+              <q-item-section>
+                <q-item-label class="message-sender">
+                  {{ message.sender }}
+                </q-item-label>
+                <q-item-label class="message-timestamp">
+                  {{ formatTimestamp(message.timestamp) }}
+                </q-item-label>
+                <q-item-label>{{ message.icerik }}</q-item-label>
+              </q-item-section>
+            </q-item>
           </div>
-          <div class="text-pink-5">{{ message.text }}</div>
+        </q-scroll-area>
+        <div class="chat-input">
+          <q-input
+            v-model="newMessage"
+            label="Type your message..."
+            @keyup.enter="sendMessage"
+            dense
+            outlined
+            autofocus
+          />
+          <q-btn @click="sendMessage" label="Send" color="primary" />
         </div>
-
-        <!-- Mesaj Girişi -->
-        <q-input
-          v-model="newMessage"
-          filled
-          placeholder="Mesajınızı yazın..."
-          @keyup.enter="sendMessage"
-          dense
-          class="text-pink-5"
-        >
-          <template v-slot:append>
-            <q-btn icon="send" @click="sendMessage" class="text-pink-5" />
-          </template>
-        </q-input>
-      </q-card-section>
-    </q-card>
-    <q-card v-else class="q-pa-md bg-white">
-      <q-card-section>
-        <div class="text-h6 text-pink-5">Bir Konu Seçin</div>
-        <p class="text-pink-5">
-          Konulardan birini seçerek sohbet etmeye başlayın.
-        </p>
-      </q-card-section>
-    </q-card>
+        <q-banner v-if="error" class="bg-red text-white">
+          {{ error }}
+        </q-banner>
+      </div>
+    </div>
+    <div v-else>
+      <p>Lütfen listeden bir sohbet konusu seçin.</p>
+    </div>
   </q-page>
 </template>
 
 <script lang="ts" setup>
-import { ref, watchEffect } from "vue";
+import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
-
-interface Topic {
-  title: string;
-  link: string;
-}
+import { api } from "src/boot/axios";
 
 interface Message {
+  id: string;
   sender: string;
-  text: string;
-  timestamp: string;
+  icerik: string;
+  timestamp: Date;
 }
 
+// Route query'den chatId'yi almak
 const route = useRoute();
-const selectedTopic = ref<Topic | null>(null);
-const newMessage = ref("");
+const chatId = ref<string | undefined>(
+  route.query.chatId as string | undefined
+);
 const messages = ref<Message[]>([]);
+const newMessage = ref<string>("");
+const error = ref<string | null>(null);
 
-watchEffect(() => {
-  const topicId = route.params.topicId as string;
-
-  const topicData: { [key: string]: Topic } = {
-    "general-chat": { title: "General Chat", link: "" },
-    technology: { title: "Technology", link: "" },
-    news: { title: "News", link: "" },
-    literature: { title: "Literature", link: "" },
-    life: { title: "Life", link: "" },
-    swimming: { title: "Swimming", link: "" },
-  };
-  selectedTopic.value = topicData[topicId] || null;
+// Mevcut mesajları backend'den al
+onMounted(async () => {
+  if (chatId.value) {
+    try {
+      const response = await api.get(`/messages/topic/${chatId.value}`);
+      messages.value = response.data;
+    } catch (err) {
+      error.value = "Mesajlar alınırken hata oluştu.";
+      console.error("Mesajlar alınırken hata oluştu:", err);
+    }
+  }
 });
 
 function sendMessage() {
   if (newMessage.value.trim()) {
-    const timestamp = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    messages.value.push({
-      sender: "Sen",
-      text: newMessage.value,
-      timestamp: timestamp,
-    });
-    newMessage.value = "";
+    // Yeni mesajı backend'e gönder
+    api
+      .post("/messages", {
+        baslik: "Başlık", // Eğer dinamik bir başlık varsa buraya ekleyin
+        icerik: newMessage.value.trim(),
+        topicId: "30c23a24-e78e-4f8b-b321-c5f694547ed7",
+      })
+      .then((response) => {
+        messages.value.push(response.data);
+        newMessage.value = ""; // Mesaj alanını temizle
+        error.value = null; // Hata varsa temizle
+      })
+      .catch((err) => {
+        error.value = "Mesaj gönderilirken hata oluştu.";
+        console.error("Mesaj gönderilirken hata oluştu:", err);
+      });
+  } else {
+    error.value = "Mesaj boş olamaz.";
   }
+}
+
+function formatTimestamp(date: Date): string {
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+  };
+  return new Date(date).toLocaleDateString("tr-TR", options);
 }
 </script>
 
 <style scoped>
-.bg-pink-1 {
-  background-color: #f8bbd0; /* Very light pink */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
-.text-pink-5 {
-  color: #f50057; /* Vivid pink */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.chat-message {
+  margin-bottom: 10px;
+}
+
+.message-sender {
+  font-weight: bold;
+}
+
+.message-timestamp {
+  font-size: 0.8em;
+  color: #888;
+}
+
+.chat-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.q-banner {
+  margin-top: 10px;
 }
 </style>

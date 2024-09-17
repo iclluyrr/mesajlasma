@@ -7,8 +7,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Column;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -19,8 +21,16 @@ public class Mesaj {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+    private String baslik;
+    private String icerik;
 
-    private String metin;
+
+    // Mesajın gönderildiği zaman
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime timestamp = LocalDateTime.now();
+
+    // Mesajın göndereni
+    private String sender;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "topic_id") // Mesajın hangi konuya ait olduğunu belirtir

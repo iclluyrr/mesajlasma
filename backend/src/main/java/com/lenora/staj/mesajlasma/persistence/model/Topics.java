@@ -8,6 +8,8 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.CascadeType;
 import lombok.Data;
+import lombok.ToString;
+import net.minidev.json.annotate.JsonIgnore;
 
 import java.util.List;
 import java.util.Objects;
@@ -25,6 +27,7 @@ public class Topics {
     private String aciklama;
 
     @OneToMany(mappedBy = "topic", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+     @JsonIgnore
     private List<Mesaj> mesajlar;
 
     @Override

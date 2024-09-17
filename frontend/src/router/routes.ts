@@ -1,9 +1,9 @@
 import { RouteRecordRaw } from "vue-router";
-
 const routes: RouteRecordRaw[] = [
   {
     path: "/",
     component: () => import("layouts/LoginLayout.vue"),
+    // Burada, bir alt rota tanımlamanız gerekiyorsa veya giriş yapmış kullanıcıyı kontrol etmek istiyorsanız, ek konfigürasyon yapabilirsiniz.
   },
   {
     path: "/main",
@@ -11,18 +11,16 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: "topics",
-        component: () => import("layouts/TopicsList.vue"),
+        name: "topics-list",
+        component: () => import("pages/TopicsList.vue"),
       },
       {
-        path: "chat/:topicId",
+        path: "chat",
         name: "chat-page",
         component: () => import("pages/ChatPage.vue"),
-        props: (route) => ({ topicId: route.params.topicId }),
       },
     ],
   },
-  // Always leave this as the last one,
-  // but you can also remove it
   {
     path: "/:catchAll(.*)*",
     component: () => import("layouts/ErrorNotFound.vue"),
