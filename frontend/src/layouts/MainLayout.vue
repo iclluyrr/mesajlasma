@@ -3,15 +3,6 @@
     <!-- Header -->
     <q-header elevated class="bg-pink-3">
       <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          @click="toggleLeftDrawer"
-          aria-label="Menu"
-          icon="menu"
-          class="text-white"
-        />
         <q-toolbar-title class="text-white">
           <q-icon name="chat" /> Chat App
         </q-toolbar-title>
@@ -19,7 +10,7 @@
     </q-header>
 
     <!-- Drawer -->
-    <q-drawer v-model="leftDrawerOpen" show-if-above class="bg-pink-4">
+    <q-drawer show-if-above class="bg-pink-4">
       <q-list dark>
         <!-- Essential Links Section -->
         <q-item-label header class="text-white">Essential Links</q-item-label>
@@ -126,7 +117,6 @@
           </q-item-section>
         </q-item>
 
-        <!-- Topics List Section -->
         <q-item-label header class="q-mt-md text-white"
           >Topics List</q-item-label
         >
@@ -148,11 +138,9 @@
       </q-list>
     </q-drawer>
 
-    <!-- Main Page Content -->
+    <!-- Page Container -->
     <q-page-container>
-      <q-page class="q-pa-md bg-pink-1">
-        <router-view />
-      </q-page>
+      <router-view />
     </q-page-container>
   </q-layout>
 </template>
@@ -167,7 +155,6 @@ interface Topic {
 }
 
 const router = useRouter();
-const leftDrawerOpen = ref(false);
 const selectedTopic = ref<Topic | null>(null);
 
 const topicsList: Topic[] = [
@@ -179,41 +166,10 @@ const topicsList: Topic[] = [
   { title: "Swimming", link: "/main/chat/swimming" },
 ];
 
-function toggleLeftDrawer() {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
-}
-
 function goToChat(topic: Topic) {
-  router.push({ path: topic.link });
+  router.push({
+    path: "/main/chat",
+    query: { chatId: topic.title.toLowerCase().replace(/ /g, "-") },
+  });
 }
 </script>
-
-<style scoped>
-.q-drawer {
-  max-width: 300px;
-}
-
-.q-page {
-  background-color: #fce4ec;
-}
-
-.bg-pink-1 {
-  background-color: #f8bbd0; /* Very light pink */
-}
-
-.bg-pink-2 {
-  background-color: #f48fb1; /* Light pink */
-}
-
-.bg-pink-3 {
-  background-color: #ec407a; /* Medium pink */
-}
-
-.bg-pink-4 {
-  background-color: #d81b60; /* Dark pink */
-}
-
-.text-white {
-  color: #ffffff; /* White color for text */
-}
-</style>

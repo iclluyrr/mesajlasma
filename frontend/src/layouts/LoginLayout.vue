@@ -112,11 +112,10 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { useQuasar } from "quasar";
 import { useRouter } from "vue-router";
 import { api } from "src/boot/axios";
+import { LocalStorage } from "quasar";
 
-const $q = useQuasar();
 const router = useRouter();
 
 const tab = ref("login");
@@ -140,9 +139,9 @@ async function login() {
       sifre: password.value,
     };
     const resp = await api.post("/auth/login", payload);
-    const token = resp.data;
-    $q.localStorage.set("token", token);
-
+    const token = await resp.data;
+    await LocalStorage.removeItem("token");
+    LocalStorage.set("token", token);
     dialogTitle.value = "Başarı";
     dialogMessage.value = "Giriş başarılı!";
     dialogVisible.value = true;
